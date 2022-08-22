@@ -1,5 +1,5 @@
 ---
-title: "안녕하세요! Android 개발자 이진욱입니다!”
+title: 안녕하세요! Android 개발자 이진욱입니다!
 permalink: /about/
 layout: single
 comments: false
