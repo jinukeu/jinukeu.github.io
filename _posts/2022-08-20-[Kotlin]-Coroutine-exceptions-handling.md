@@ -1,8 +1,19 @@
 ---
-layout: post
 title:  "[Kotlin] Coroutine exceptions handling"
-description: Coroutine exceptions handling
-tags: 안드로이드_코루틴
+excerpt: "Coroutine exceptions handling"
+
+categories:
+  - Kotlin
+tags:
+  - [코루틴]
+
+permalink: /kotlin/"Coroutine-exceptions-handling"/
+
+toc: true
+toc_sticky: true
+
+date: 2022-08-20
+last_modified_at: 2022-08-20
 ---
 > 코루틴 공식 문서를 번역하고 내용을 조금 변경하거나 내용을 추가한 게시글입니다. 잘못된 번역이 있을 수 있습니다.
 > [참고한 공식 문서 바로가기](https://kotlinlang.org/docs/exception-handling.html)

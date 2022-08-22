@@ -1,8 +1,19 @@
 ---
-layout: post
-title:  "[Android] Manifest"
-description: Manifest?
-tags: 안드로이드_개념
+title: "[Android] Manifest"
+excerpt: "Manifest"
+
+categories:
+  - Android
+tags:
+  - [대외활동, 회고]
+
+permalink: /android/manifest/
+
+toc: true
+toc_sticky: true
+
+date: 2022-08-04
+last_modified_at: 2022-08-04
 ---
 > 안드로이드 공식 문서를 조금 변경하거나 내용을 추가한 게시글입니다.  
 > [참고한 공식 문서 바로가기](https://developer.android.com/guide/topics/manifest/manifest-intro) 
