@@ -19,10 +19,10 @@ main:
 # 2022.02.15 sidebar update : simple ver.
 categories:
   - title: "Android"
-    url: /categories/#android/
-  - title: "Plan"
-    url: /categories/#plan/
+    url: /categories/android/
   - title: "Kotlin"
-    url: /categories/#kotlin/
+    url: /categories/kotlin/
+  - title: "Plan"
+    url: /categories/plan/
   - title: "회고"
-    url: /categories/#remembrance/
+    url: /categories/remembrance/

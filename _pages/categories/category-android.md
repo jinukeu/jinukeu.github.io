@@ -1,7 +1,7 @@
 ---
 title: "Android"
 layout: category
-permalink: /categories/Android/
+permalink: /categories/android/
 author_profile: true
 taxonomy: Android
 sidebar:
