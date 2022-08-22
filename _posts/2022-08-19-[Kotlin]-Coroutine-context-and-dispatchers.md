@@ -7,7 +7,7 @@ categories:
 tags:
   - [코루틴]
 
-permalink: /kotlin/"Coroutine-context-and-dispatchers"/
+permalink: /kotlin/Coroutine-context-and-dispatchers/
 
 toc: true
 toc_sticky: true

@@ -7,7 +7,7 @@ categories:
 tags:
   - [코루틴]
 
-permalink: /kotlin/"Coroutine-exceptions-handling"/
+permalink: /kotlin/Coroutine-exceptions-handling/
 
 toc: true
 toc_sticky: true

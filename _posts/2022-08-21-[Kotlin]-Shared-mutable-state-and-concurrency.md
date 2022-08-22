@@ -7,7 +7,7 @@ categories:
 tags:
   - [코루틴]
 
-permalink: /kotlin/"Shared-mutable-state-and-concurrency"/
+permalink: /kotlin/Shared-mutable-state-and-concurrency/
 
 toc: true
 toc_sticky: true
