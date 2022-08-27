@@ -12,8 +12,8 @@ permalink: /android/MVVM-패턴-박살내기-1/
 toc: true
 toc_sticky: true
 
-date: 2022-08-28
-last_modified_at: 2022-08-28
+date: 2022-08-27
+last_modified_at: 2022-08-27
 ---
 ## MVVM 패턴이란?
 코드를 ***M***odel, ***V***iew, ***V***iew***M***odel의 역할에 맞게 분리하서 작성하는 디자인 패턴
