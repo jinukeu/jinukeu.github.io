@@ -18,6 +18,7 @@ last_modified_at: 2022-08-28
 ## MVVM 패턴이란?
 코드를 ***M***odel, ***V***iew, ***V***iew***M***odel의 역할에 맞게 분리하서 작성하는 디자인 패턴
 
+
 <br>
 
 ## 왜 MVVM을 사용할까?
