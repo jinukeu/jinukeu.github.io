@@ -1,19 +1,19 @@
 ---
-title: "[Android] MVVM 패턴 박살내기 - 1"
-excerpt: "안드로이드 MVVM 패턴의 기본 개념, 사용 이유, AAC"
+title: "[Android] MVVM 패턴 박살내기"
+excerpt: "안드로이드 MVVM 패턴의 기본 개념, 사용 이유, AAC 등"
 
 categories:
   - Android
 tags:
   - []
 
-permalink: /android/MVVM-패턴-박살내기-1/
+permalink: /android/MVVM-패턴-박살내기/
 
 toc: true
 toc_sticky: true
 
 date: 2022-08-27
-last_modified_at: 2022-08-27
+last_modified_at: 2022-08-29
 ---
 ## MVVM 패턴이란?
 코드를 ***M***odel, ***V***iew, ***V***iew***M***odel의 역할에 맞게 분리하서 작성하는 디자인 패턴
@@ -107,9 +107,11 @@ AAC(Android Architecture Components)를 사용하면 비교적 쉽게 구현 가
 
 <br>
 
-### LiveData의 한계
+### 2. LiveData의 한계
 우선 `LiveData`가 뭔지 알아보자.   
 `LiveData`란 `LiveCycle`을 알고 있는 `DataType`이라 생각하면 된다. ***LiveData는 Observer 객체를 이용하여 데이터의 변화를 관찰하며 UI를 업데이트 합니다.*** 어라? `MVVM`에서 `View`의 역할은 ***ViewModel의 데이터를 관찰하여 UI를 갱신하는건데*** ... 아! `ViewModel`의 데이터를 `LiveData`로 만들면 되겠네!   
+
+<br>
   
 #### LiveData vs MutableLiveData
 `LiveData`는 `read-only`이고 `MutableLiveData`는 `LiveData`를 수정할 수 있다.   
@@ -119,9 +121,74 @@ AAC(Android Architecture Components)를 사용하면 비교적 쉽게 구현 가
 
 <br>
 
-그래서 `LiveData`의 한계가 뭔가요?   
-그건 다음 포스팅에 계속 ...
+그래서 `LiveData`의 한계가 뭔데?   
+바로 비동기 데이터 스트림을 지원하지 않는다는 것! 이유는 `LiveData`는 UI와 밀접하게 연관되어 있기 때문에 오직 `Main Thread`에서만 관찰되기 때문이다. 따라서 데이터베이스(Local)과 서버(Remote)와의 통신이 이루어지는 `Repository`에서 `LiveData`를 사용할 수 없다.   
 
+클린 아키텍처의 `Domain Layer`에서도 `LiveData`를 사용할 수 없다. `Domain Layer`는 순수 Java 및 Kotlin 코드로만 구성하는데 `LiveData`는 안드로이드 플랫폼에 종속적이기 때문   
+
+이러한 이유로 `LiveData`는 사용하지 않는게 좋다! (`Repositroy`는 해당 포스트에서 클린 아키텍처는 나중 포스트에서 다룰 예정)
+
+<br>
+
+#### Flow
+하지만~!! 비동기 데이터 스트림을 지원하는 Kotlin 클래스 `Flow`가 존재한다. 이를 통해 `ViewModel`에서는 `LiveData`를 사용하고 DB, 서버와 통신을 하는 `Repository`같은 곳에서는 `Flow`를 사용하면 된다. 하지만 ... 이런 방법을 사용해도 `Flow`는 `LiveData`를 완전히 대체할 수 없다.   
+
+* `Flow`는 스스로 안드로이드 생명주기에 대해 알 수 없다.
+* `Flow`는 상태가 없어 값이 할당된 것인지, 현재 값은 무엇인지 알기가 어렵다.
+* `Flow`는 `Cold Stream` 방식으로, 연속해서 계속 들어오는 데이터를 처리할 수 없으며 `collect` 되었을 때만 생성되고 값을 반환한다. 만약, 하나의 `flow builder` 에 대해 다수의 `collector`가 있다면 `collector` 하나마다 하나씩 데이터를 호출하기 때문에 업스트림 로직이 비싼 비용을 요구하는 DB 접근이나 서버 통신 등이라면 여러 번 리소스 요청을 하게 될 수 있다.
+
+<br>
+
+### StateFlow, SharedFlow 
+위의 단점을 보완하기 위해 `StateFlow`, `SharedFlow`가 나왔다. (`SharedFlow`는 `StateFlow`의 일반적인 버전이다. 자세한 설명은 다른 포스트에서 하겠다.)   
+
+<br>
+
+#### StateFlow 특징
+* `StateFlow`는 항상 값을 가지고 있고, 오직 한 가지 값을 가진다.
+* `StateFlow`는 여러 개의 `collector`를 지원한다. 이는 `flow`가 공유된다는 의미이며 앞서 설명했던 `flow`의 단점과는 다르게 업스트림이 `collector` 마다 중복으로 처리되지 않는다.
+* `StateFlow` 는 `collector` 수에 관계없이 항상 구독하고 있는 것의 최신 값을 받는다.
+* `StateFlow` 는 `flow builder` 를 사용하여 빌드된 `flow` 가 `cold stream `이었던 것과 달리, `hot stream`이다. 따라서 `collector` 에서 수집하더라도 생산자 코드가 트리거 되지 않고, 일반 `flow`는 마지막 값의 개념이 없었던 것과 달리 `StateFlow` 는 마지막 값의 개념이 있으며 생성하자마자 활성화된다.
+
+<br>
+
+`LiveData`는 `StateFlow`로 완전히 대체 가능하다.
+
+<br>
+
+## Repository 패턴
+아! 이제 MVVM을 사용하는 이유, 기본 개념, AAC ViewModel과 MVVM ViewModel의 차이점, LiveData대신 StateFlow를 사용해라! 까지 알았으니 이제 실습만 하면 되겠군요? ㅋㅋ   
+
+<br>
+
+아뇨 Repositroy 패턴까지만 ... 보고 가시죠!   
+
+![repositroy](/assets/images/repositroy.png)
+
+<br>
+
+> **Repositroy**   
+> 데이터 출처(로컬 DB인지 API응답인지 등)와 관계 없이 동일 인터페이스로 데이터에 접속할 수 있도록 만드는 것을 Repository 패턴이라고 한다. 레포지토리는 데이터 소스에 액세스하는 데 필요한 논리를 캡슐화하는 클래스 또는 구성 요소이다. Repository 의 존재 덕분에 ViewModel 이 데이터를 관리할 필요가 없게 된다.
+
+<br>
+
+Repositroy 사용 이유는 역시 **캡슐화** 때문인 것 같다.
+
+<br>
+
+## 마무리
+이렇게 Repository에 대한 간단한 설명을 마지막으로 포스팅을 끝내려한다. 이제 남은 일은 Github에서 MVVM 예제 소스를 찾아서 공부하는 것 뿐 ... (클린 아키텍처도 공부 ...)
+
+<br>
+
+## 레퍼런스
+https://velog.io/@haero_kim/Android-%EA%B9%94%EC%8C%88%ED%95%98%EA%B2%8C-MVVM-%ED%8C%A8%ED%84%B4%EA%B3%BC-AAC-%EC%95%8C%EC%95%84%EB%B3%B4%EA%B8%B0   
+https://devvkkid.tistory.com/196   
+https://readystory.tistory.com/207   
+https://yjyoon-dev.github.io/android/2022/02/12/android-02/  
+https://velog.io/@k7120792/Model-View-ViewModel-Pattern   
+https://leveloper.tistory.com/216
+https://blog.yena.io/studynote/2019/03/16/Android-MVVM-AAC-1.html
 
 
 
