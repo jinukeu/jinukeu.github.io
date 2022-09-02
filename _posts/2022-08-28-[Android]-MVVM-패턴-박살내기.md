@@ -172,10 +172,6 @@ AAC(Android Architecture Components)를 사용하면 비교적 쉽게 구현 가
 
 <br>
 
-Repositroy 사용 이유는 역시 **캡슐화** 때문인 것 같다.
-
-<br>
-
 ## 마무리
 이렇게 Repository에 대한 간단한 설명을 마지막으로 포스팅을 끝내려한다. 이제 남은 일은 Github에서 MVVM 예제 소스를 찾아서 공부하는 것 뿐 ... (클린 아키텍처도 공부 ...)
 
