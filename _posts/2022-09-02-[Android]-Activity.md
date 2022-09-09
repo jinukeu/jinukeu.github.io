@@ -1,5 +1,5 @@
 ---
-title: "[Android] Activity (작성중)"
+title: "[Android] Activity"
 excerpt: "Activity 기본 개념"
 
 categories:
