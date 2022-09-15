@@ -1,24 +1,22 @@
 ---
-title: "[Android] Broadcast Receiver"
-excerpt: "Broadcast Receiver 기본 개념"
+title: "[Android] Broadcast Receiver, Content Providers"
+excerpt: "Broadcast Receiver, Content Providers 문서 링크"
 
 categories:
   - Android
 tags:
   - []
 
-permalink: /android/Broadcast-Receiver-Basic/
+permalink: /android/Broadcast-Receiver-Content-Providers/
 
 toc: true
 toc_sticky: true
 
 date: 2022-09-13
-last_modified_at: 2022-09-13
+last_modified_at: 2022-09-15
 ---
-
-> 안드로이드 공식 문서를 번역하고 내용을 조금 변경하거나 내용을 추가한 게시글입니다. 잘못된 내용이 있을 수 있습니다.
-> [참고한 공식 문서 바로가기](https://developer.android.com/guide/components/broadcasts)
 
 영문서와 한글 공식 문서가 동일함. 따라서 내용 정리 스킵   
 
-[한글 문서](https://developer.android.com/guide/components/broadcasts)
+[브로드캐스트](https://developer.android.com/guide/components/broadcasts)
+[컨텐츠프로바이더](https://developer.android.com/guide/topics/providers/content-providers)
