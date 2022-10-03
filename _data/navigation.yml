@@ -18,6 +18,8 @@ main:
 # sidebar navigation (categories)
 # 2022.02.15 sidebar update : simple ver.
 categories:
+  - title: "CS"
+    url: /categories/cs
   - title: "Android"
     url: /categories/android/
   - title: "Kotlin"

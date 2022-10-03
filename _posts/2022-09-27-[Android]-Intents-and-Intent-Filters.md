@@ -229,4 +229,4 @@ fun onCreate() {
 ### 인텐트를 더 책임감 있게 사용
 안전하지 않은 인텐트 실행과 StrictMode 위반을 방지하기 위해 다음 best practices를 따르세요.   
 
-인텐트안에서 필수적인 extras만 복사하고 
+**인텐트안에서 필수적인 extras만 복사하고 어느 필요한 sanitation과 validation을 수행하세요.** 앱은 아마 extras를 하나의 인텐트에서 새로운 구성 요소를 시작하기 위한 다른 인텐트로 복사할 것입니다. 이는 앱이 putExtras(Intent) 또는 putExtras(Bundle)를 호출할 때 발생합니다. 만약 이러한 작업을 앱이 수행한다면 수신하는 구성 요소가 예상하는 extras만 복사하세요. 만약 다른 인텐트가 (복사본을 전달 받는) export하지 않은 구성 요소를 실행하는 경우, 구성 요소를 실행하는 인텐트로 복사하기 전에 extras를 검사하고 유효성을 검사하세요.
