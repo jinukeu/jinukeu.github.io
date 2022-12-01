@@ -1,5 +1,5 @@
 ---
-title: "[Android] Intents and Intent Filters (작성 중)"
+title: "[Android] Intents and Intent Filters"
 excerpt: "Intents and Intent Filters 공식 문서 번역"
 
 categories:
@@ -13,7 +13,7 @@ toc: true
 toc_sticky: true
 
 date: 2022-09-27
-last_modified_at: 2022-09-27
+last_modified_at: 2022-12-01
 ---
 
 > 안드로이드 공식 문서를 번역하고 내용을 조금 변경하거나 내용을 추가한 게시글입니다. 잘못된 내용이 있을 수 있습니다.
@@ -229,4 +229,293 @@ fun onCreate() {
 ### 인텐트를 더 책임감 있게 사용
 안전하지 않은 인텐트 실행과 StrictMode 위반을 방지하기 위해 다음 best practices를 따르세요.   
 
-**인텐트안에서 필수적인 extras만 복사하고 어느 필요한 sanitation과 validation을 수행하세요.** 앱은 아마 extras를 하나의 인텐트에서 새로운 구성 요소를 시작하기 위한 다른 인텐트로 복사할 것입니다. 이는 앱이 putExtras(Intent) 또는 putExtras(Bundle)를 호출할 때 발생합니다. 만약 이러한 작업을 앱이 수행한다면 수신하는 구성 요소가 예상하는 extras만 복사하세요. 만약 다른 인텐트가 (복사본을 전달 받는) export하지 않은 구성 요소를 실행하는 경우, 구성 요소를 실행하는 인텐트로 복사하기 전에 extras를 검사하고 유효성을 검사하세요.
+**인텐트안에서 필수적인 extras만 복사하고 어느 필요한 sanitation과 validation을 수행하세요.** 앱은 아마 extras를 하나의 인텐트에서 새로운 구성 요소를 시작하기 위한 다른 인텐트로 복사할 것입니다. 이는 앱이 putExtras(Intent) 또는 putExtras(Bundle)를 호출할 때 발생합니다. 만약 이러한 작업을 앱이 수행한다면 수신하는 구성 요소가 예상하는 extras만 복사하세요. 만약 다른 인텐트가 (복사본을 전달 받는) export하지 않은 구성 요소를 실행하는 경우, 구성 요소를 실행하는 인텐트로 복사하기 전에 extras를 검사하고 유효성을 검사하세요.   
+
+**앱 컴포넌트를 불필요하게 export 하지마세요.** 예를 들어, internal nested intent를 사용하여 앱 컴포넌트를 시작하고 싶다면, 해당 컴포넌트의 `android:exported` attribute를 false로 설정하세요.   
+
+**nested intent 대신 PendingIntent를 사용하세요.** 그렇게하면 다른 앱이 Intent를 포함한 PendingIntent를 뜯어볼 때(unparcels), 다른 앱이 당신 앱의 identity를 사용하여 PendingIntent를 사용할 수 있습니다.
+
+그림 2는 어떻게 시스템이 제어권을 당신의 앱(client)에서 다른 앱(service)으로 넘기고 당신의 앱으로 돌아오는 것을 보여줍니다.   
+
+1. 당신의 앱은 다른 앱에서 activity를 실행하는 intent를 만듭니다. intent 안에서, PendingIntent 객체를 extra로 추가합니다. 이 pending intent는 당신의 앱안에서 component를 실행합니다.; 이 component는 exproted되지 않았습니다.
+
+2. 당신 앱의 intent를 받을 때까지, 다른 앱은 nested PendingIntent 객체를 추출합니다. 
+
+3. 다른 앱은 PendingIntent 객체의 send() 메서드를 실행합니다.
+
+4. 당신의 앱이 제어권을 다시 갖게되면, 시스템은 당신 앱의 context를 사용하여 pending intent를 실행합니다.
+
+![](https://developer.android.com/static/images/guide/components/nested-pending-intent.svg)   
+
+## 암시적 인텐트 수신
+앱이 수신할 수 있는 암시적 인텐트가 어느 것인지 알리려면, `<intent-filter>` 요소를 사용하여 각 앱 구성 요소에 대해 하나 이상의 인텐트 필터를 매니페스트 파일에 선언합니다. 각 인텐트 필터는 인텐트의 작업, 데이터 및 카테고리를 기반으로 어느 유형의 인텐트를 수락하는지 지정합니다. 시스템은 인텐트가 인텐트 필터 중 하나를 통과한 경우에만 암시적 인텐트를 앱 구성 요소에 전달합니다.
+
+> 참고 : 명시적 인텐트는 항상 자신의 대상에게 전달되며, 이는 구성 요소가 어떤 인텐트 필터를 선언하든 무관합니다.   
+
+앱 구성 요소는 자신이 수행할 수 있는 각각의 고유한 작업에 대하여 별도의 필터를 선언해야 합니다. 예를 들어 이미지 갤러리 앱에 있는 어떤 액티비티에 두 개의 필터가 있을 수 있습니다. 한 필터는 이미지를 보고, 다른 필터는 이미지를 편집하기 위한 것입니다. 액티비티가 시작되면, Intent를 검사한 다음 Intent에 있는 정보를 근거로 어떻게 동작할 것인지 결정합니다(편집기 제어 항목을 표시할 것인지 말 것인지 등).
+
+각 인텐트 필터는 앱의 매니페스트 파일에 있는 `<intent-filter>`요소에서 정의하고, 이는 대응되는 앱 구성 요소에서 중첩됩니다(예: `<activity>` 요소).   
+
+`<intent-filter>`요소를 포함한 각각의 앱 component 안에서, `android:exported` 값을 명백하게 설정해야합니다. 이 attribute는 앱 컴포넌트가 다른 앱에 접근할 수 있는지를 나타냅니다. 몇몇 상황에서, `LAUNCHER` 카테고리를 포함된 intent filters를 갖고 있는 activities에서 이 attribute를 true로 하는 것은 유용하다. 반면에 이 attribute를 false로 하는게 더 안전하긴하다.
+
+> 주의 : 당신의 앱 내의 activity, service 또는 broadcast receiver가 intent filters를 사용하지만 명백하게 android:export 값을 설정하지 않은 경우, Android 12 이상의 디바이스에서 당신의 앱은 설치되지 않는다.   
+
+`<intent-filter>` 내부에서는 다음과 같은 세 가지 요소 중 하나 이상을 사용하여 허용할 인텐트 유형을 지정할 수 있습니다.   
+
+`<action>`
+name 특성에서 허용된 인텐트 작업을 선언합니다. 이 값은 어떤 작업의 리터럴 문자열 값이어야 하며, 클래스 상수가 아닙니다.
+`<data>`
+허용된 데이터 유형을 선언합니다. 이때 데이터 URI(scheme, host, port, path)와 MIME 유형의 여러 가지 측면을 나타내는 하나 이상의 특성을 사용합니다.
+`<category>`
+name 특성에서 허용된 인텐트 카테고리를 선언합니다. 이 값은 어떤 작업의 리터럴 문자열 값이어야 하며, 클래스 상수가 아닙니다.   
+
+> 참고 : 암시적 인텐트를 수신하려면 CATEGORY_DEFAULT 카테고리를 인텐트 필터에 포함해야 합니다. startActivity() 및 startActivityForResult() 메서드는 마치 CATEGORY_DEFAULT 범주를 선언한 것처럼 모든 인텐트를 취급합니다. 이 카테고리를 인텐트 필터에서 선언하지 않으면 액티비티에 어떤 암시적 인텐트도 확인되지 않습니다.   
+
+예를 들어 데이터 유형이 텍스트인 경우 ACTION_SEND 인텐트를 수신할 인텐트 필터가 있는 액티비티 선언은 다음과 같습니다.
+
+```kotlin
+<activity android:name="ShareActivity" android:exported="false">
+    <intent-filter>
+        <action android:name="android.intent.action.SEND"/>
+        <category android:name="android.intent.category.DEFAULT"/>
+        <data android:mimeType="text/plain"/>
+    </intent-filter>
+</activity>
+```   
+
+<action>, <data> 또는 <category>의 인스턴스를 두 개 이상 포함하는 필터를 생성할 수 있습니다. 이렇게 하는 경우, 구성 요소가 그러한 필터 요소의 모든 조합을 처리할 수 있는지 확인해야 합니다.
+
+여러 가지 종류의 인텐트를 처리하고자 하되 특정 조합의 작업, 데이터, 카테고리 유형으로만 한정하고자 할 때는 여러 가지 인텐트 필터를 생성해야 합니다.
+
+암시적 인텐트는 인텐트를 세 가지 요소와 각각 비교하여 필터를 테스트합니다. 인텐트가 구성 요소에 전달되려면 세 가지 테스트를 모두 통과해야 합니다. 그중 하나라도 통과하지 못하면 Android 시스템에서 해당 인텐트를 구성 요소에 전달하지 않습니다. 그러나 구성 요소에는 여러 개의 인텐트 필터가 있을 수도 있으므로, 구성 요소의 필터 중 하나를 통과하지 않는 인텐트도 다른 필터를 통하면 성공할 수 있습니다. 시스템이 인텐트를 확인하는 방법에 대한 자세한 내용은 인텐트 확인에 대해 다룬 아래의 섹션에 제공되어 있습니다.   
+
+> 주의 : 인텐트 필터를 사용하면 다른 앱이 여러분의 구성 요소를 시작할 위험이 있습니다. 인텐트 필터는 구성 요소가 특정한 종류의 암시적 인텐트에만 응답하도록 제한하기는 하지만, 다른 개발자가 여러분의 구성 요소 이름을 알아내서 명시적 인텐트를 사용할 경우 다른 앱이 여러분의 구성 요소를 시작할 수도 있습니다. 자신의 앱만 구성 요소를 시작하는 것이 중요할 경우 매니페스트에 인텐트 필터를 선언하지 마세요. 그 대신 해당 구성 요소에 대해 exported 특성을 "false"로 설정하세요.
+
+마찬가지로 의도치 않게 다른 앱의 Service를 실행하는 일을 피하려면, 항상 명시적 인텐트를 사용하여 본인의 서비스를 시작하세요.   
+
+> 참고 : 모든 액티비티는 매니페스트 파일에서 인텐트 필터를 선언해야 합니다. 그러나 Broadcast Receiver의 필터는 registerReceiver()를 호출하여 동적으로 등록할 수 있습니다. 그런 다음 unregisterReceiver()를 사용하여 해당 수신기를 등록 해제할 수 있습니다. 이렇게 하면 앱이 실행되는 동안에 정해진 기간 동안만 특정한 브로드캐스트에 대해 수신 대기할 수 있습니다.   
+
+### 필터 예시
+몇 가지 인텐트 필터 동작 보여드리기 위해 소셜 공유 앱의 매니페스트 파일 예시를 준비했습니다.   
+```kotlin
+<activity android:name="MainActivity" android:exported="true">
+    <!-- This activity is the main entry, should appear in app launcher -->
+    <intent-filter>
+        <action android:name="android.intent.action.MAIN" />
+        <category android:name="android.intent.category.LAUNCHER" />
+    </intent-filter>
+</activity>
+
+<activity android:name="ShareActivity" android:exported="false">
+    <!-- This activity handles "SEND" actions with text data -->
+    <intent-filter>
+        <action android:name="android.intent.action.SEND"/>
+        <category android:name="android.intent.category.DEFAULT"/>
+        <data android:mimeType="text/plain"/>
+    </intent-filter>
+    <!-- This activity also handles "SEND" and "SEND_MULTIPLE" with media data -->
+    <intent-filter>
+        <action android:name="android.intent.action.SEND"/>
+        <action android:name="android.intent.action.SEND_MULTIPLE"/>
+        <category android:name="android.intent.category.DEFAULT"/>
+        <data android:mimeType="application/vnd.google.panorama360+jpg"/>
+        <data android:mimeType="image/*"/>
+        <data android:mimeType="video/*"/>
+    </intent-filter>
+</activity>
+```   
+
+첫 번째 액티비티인 MainActivity는 앱의 주요 진입 지점입니다. 즉 이것은 사용자가 시작 관리자 아이콘을 사용하여 앱을 처음 시작할 때 열리는 액티비티입니다.
+
+ACTION_MAIN 작업은 이것이 주요 진입 지점이며 어느 인텐트 데이터도 기대하지 않는다는 것을 나타냅니다.
+CATEGORY_LAUNCHER 카테고리는 이 액티비티의 아이콘이 시스템의 앱 시작 관리자에 배치되어야 한다는 것을 나타냅니다. <activity> 요소가 아이콘을 icon으로 지정하지 않은 경우, 시스템은 <application> 요소로부터 가져온 아이콘을 사용합니다.
+이들 두 가지가 짝을 이루어야 액티비티가 앱 시작 관리자에 나타날 수 있습니다.
+
+두 번째 액티비티인 ShareActivity는 텍스트와 미디어 콘텐츠 공유를 용이하게 할 목적으로 만들어졌습니다. 사용자가 MainActivity에서 이 액티비티로 이동하여 진입할 수도 있지만, 두 가지 인텐트 필터 중 하나와 일치하는 암시적 인텐트를 발생시키는 다른 앱에서 ShareActivity에 직접 진입할 수도 있습니다.   
+
+> 참고 : MIME 유형, 즉 application/vnd.google.panorama360+jpg는 파노라마 사진을 지정하는 특수 데이터 유형으로, Google Panorama API로 처리할 수 있습니다.   
+
+## intent와 다른 앱의 intent filters를 일치시키세요
+만약 다른 앱이 Android 13 (API level 33) 이상을 target 한다면, 당신 앱의 intent가 다른 앱의 `<intent-filter>`의 actions와 categories가 일치하는 경우에만 당신 앱의 intent를 실행할 수 있다.   
+
+마찬가지로 만약 당신의 앱을 Android 13 이상으로 업데이트 한다면, 외부 앱으로부터 유래되는 모든 intent들은 당신 앱의 export된 component로 전달된다. 오직 해당 intent가 당신의 앱이 선언한 `<intent-filter>`의 actions과 categories가 일치할 때만 말이다. 이 행동은 intent를 전송하는 앱의 target SDK Version과 상관없이 발생한다.   
+
+intent matching이 강제되지 않은 예외들:   
+* 어떠한 intent filters가 선언되지 않은 components로 전달되는 intent들
+* 같은 앱에서 유래된 Intent
+* system으로부터 유래된 intent; intent들은 "system UID"(uid=1000)으로부터 보내진다. System 앱은 `system_server`와 `android:sharedUserId`가 `android.uid.system`으로 설정된 앱들을 포함하고 있다.
+* root로부터 전달된 Intent들   
+
+[인텐트 일치](https://developer.android.com/guide/components/intents-filters#imatch)에서 더 공부하세요.   
+
+## pending intent 사용
+PendingIntent 객체는 Intent 객체 주변을 감싸는 래퍼입니다. PendingIntent의 기본 목적은 외부 애플리케이션에 권한을 허가하여 안에 들어 있는 Intent를 마치 본인 앱의 자체 프로세스에서 실행하는 것처럼 사용하게 하는 것입니다.
+
+보류 인텐트의 주요 사용 사례는 다음과 같습니다.
+
+* 사용자가 여러분의 알림으로 어떤 작업을 수행할 때 인텐트가 실행되도록 선언합니다(Android 시스템의 가 NotificationManagerIntent를 실행합니다).
+* 사용자가 여러분의 앱 위젯으로 어떤 작업을 수행할 때 인텐트가 실행되도록 선언합니다(메인 화면 앱이 Intent를 실행합니다).
+* 향후 지정된 시간에 인텐트가 실행되도록 선언합니다(Android 시스템의 AlarmManager가 Intent를 실행합니다).   
+
+각 Intent 객체는 특정한 유형의 앱 구성 요소(Activity, Service 또는 BroadcastReceiver)가 처리하도록 설계되어 있으므로, PendingIntent도 같은 고려 사항을 생각해서 생성해야 합니다. 보류 인텐트를 사용하는 경우, 여러분의 앱은 startActivity()와 같은 호출이 있는 앱을 실행하지 않게 됩니다. 대신 PendingIntent를 생성할 때 원래 의도한 구성 요소 유형을 선언해야 합니다. 이때 각각의 생성자 메서드를 호출하는 방법을 씁니다.
+
+* Activity를 시작하는 Intent의 경우, PendingIntent.getActivity()
+* Service를 시작하는 Intent의 경우, PendingIntent.getService()
+* BroadcastReceiver를 시작하는 Intent의 경우, PendingIntent.getBroadcast()   
+
+여러분의 앱이 다른 앱에서 보류 인텐트를 수신하지 않는 한, 위의 PendingIntent를 생성하는 PendingIntent 메서드만 있으면 될 것입니다.
+
+각 메서드는 현재 앱의 Context, 감싸고자 하는 Intent, 인텐트의 적절한 사용 방식을 나타내는 하나 이상의 플래그(예: 인텐트를 한 번 이상 사용할 수 있는지 여부) 등을 취합니다.
+
+보류 인텐트 사용에 관한 자세한 내용은 각 해당되는 사용 사례에 대한 문서를 참조하세요. 예를 들어 Notifications 및 App Widgets API 가이드가 있습니다.   
+
+## mutability 명시
+만약 앱이 안드로이드 12 이상을 target한다면, 반드시 앱이 만든 각각의 PendingIntent 객체의 mutability를 명시해야한다. 주어진 PendingIntent 객체가 mutable 또는 immutable한지 선언하기 위해, `PendingIntent.FLAG_MUTABLE` 또는 `PendingIntent.FLAG_IMMUTABLE`를 각각 사용해라.   
+
+만약 앱이 둘 중 하나의 mutability flag를 설정하지 않은 PendingIntent를 만들려고 시도하면, 시스템은 IllegalArgumentException를 발생시키고 다음 메세지를 Logcat에 표시합니다.   
+
+    PACKAGE_NAME: Targeting S+ (version 31 and above) requires that one of \
+    FLAG_IMMUTABLE or FLAG_MUTABLE be specified when creating a PendingIntent.
+
+    Strongly consider using FLAG_IMMUTABLE, only use FLAG_MUTABLE if \
+    some functionality depends on the PendingIntent being mutable, e.g. if \
+    it needs to be used with inline replies or bubbles.   
+
+
+### 가능한 경우 언제든지 변경할 수 없는 PendingIntent 만들기
+대부분의 경우, 다음 코드 스니펫처럼, 앱은 immutable PendingIntent 객체를 만들어야합니다. 만약 PendingIntent 객체가 immutable하다면 다른 앱은 intent를 호출한 결과를 조절하기 위해 intent를 수정할 수 없습니다.   
+
+```kotlin
+val pendingIntent = PendingIntent.getActivity(applicationContext,
+        REQUEST_CODE, intent,
+        /* flags */ PendingIntent.FLAG_IMMUTABLE)
+```
+
+그러나, 특정한 use case는 대신 mutable PendingIntent를 요구합니다.
+* [알림에서 바로 답장](https://developer.android.com/training/notify-user/build-notification#reply-action)을 지원할 때. 바로 답장은 답장과 연관된 PendingIntent 객체 안에서 clip data에 대한 변화를 요구합니다. 보통, 이러한 변화를 `FILL_IN_CLIP_DATA`를 flag로서 fillIn() 메서드로 전달함으로써 제공합니다.
+* Android Auto framework와 연관된 알림의 경우, CarAppExtender 인스턴스를 사용하는 경우
+* PendingIntent의 인스턴스를 사용하는 [bubbles](https://developer.android.com/guide/topics/ui/bubbles)안에 대화를 배치하는 경우. mutable PendingIntent 객체는 시스템이 올바른 flags를 적용하는 것을 허용합니다. (예: `FLAG_ACTIVITY_MULTIPLE_TASK`, `FLAG_ACTIVITY_NEW_DOCUMENT`)
+* `requestLocationUpdates()` 또는 유사한 API를 호출하여 디바이스의 위치 정보를 요구할 때. mutable PendingIntent 객체는 시스템이 location lifecycle event를 나타내는 intent extras를 추가하는 것을 허용해줍니다. 이러한 이벤트들은 위치 변화와 provider 사용 가능 여부가 포함된다.
+* AlarmManager를 사용하여 알람을 관리할 때. mutable PendingIntent 객체는 시스템이 `EXTRA_ALARM_COUNT` intent extra를 추가하는 것을 허용해줍니다. 이러한 extra는 실행된 반복되는 알람의 횟수를 나타냅니다. 이 extra를 포함함으로써 intent는 확실하게 반복되는 알람이 몇번 실행되었는지(예: 앱이 sleep 일때) 앱에게 알릴 수 있습니다.    
+
+만약 mutable PendingIntent 객체를 만든다면, explict intent를 사용하고 ComponentName을 채워넣을 것을 권고합니다. 그렇게 하면, 다른 앱이 PendingIntent를 실행하고 제어권이 다시 당신의 앱으로 넘어올 때마다, 당신 앱의 같은 component가 항상 실행됩니다.   
+
+### pending intents 안에서 explict intent를 사용하라
+다른 앱이 당신의 앱의 pending intents를 사용할 수 있는 방법을 더 잘 정의하려면 항상 pending intent를 explict intent로 감싸세요. 이 모범 사례를 따르려면 다음을 수행하십시오.   
+1. 설정된 base intent의 action, package, 그리고 component 필드를 확인하세요.
+2. pending intents를 생성하기 위해 Android 6.0 (API level 23)에서 추가된 `FLAG_IMMUTABLE`를 사용하세요. 이 flag는 PendingIntent를 수신한 앱이 unpopluated 프로퍼티로 채워지는 것을 방지해줍니다. 만약 앱의 minSdkVersion이 22 이하라면, 다음 코드를 통해 safety하고 compatibility를 동시에 제공할 수 있다.   
+
+```kotlin
+if (Build.VERSION.SDK_INT >= 23) {
+  // Create a PendingIntent using FLAG_IMMUTABLE.
+} else {
+  // Existing code that creates a PendingIntent.
+}
+```   
+
+## 인텐트 확인
+시스템이 액티비티를 시작하라는 암시적 인텐트를 수신하면, 시스템은 해당 인텐트에 대한 최선의 액티비티를 검색합니다. 이때 다음과 같은 세 가지 측면을 근거로 인텐트를 인텐트 필터에 비교합니다.
+
+* 작업.
+* 데이터(URI와 데이터 유형 둘 다).
+* 카테고리.
+다음 섹션에서는 인텐트 필터가 앱 매니페스트 파일에서 어떻게 선언되었는지에 따라 인텐트가 적절한 구성 요소에 어떻게 매칭되는지 설명합니다.   
+
+### 작업 테스트
+허용된 인텐트 작업을 나타내기 위해 인텐트 필터는 0개 이상의 `<action>` 요소를 선언할 수 있습니다.   
+
+```kotlin
+<intent-filter>
+    <action android:name="android.intent.action.EDIT" />
+    <action android:name="android.intent.action.VIEW" />
+    ...
+</intent-filter>
+```   
+
+이 필터를 통과하려면 Intent에 지정된 작업이 필터에 나열된 작업 중 하나와 일치해야만 합니다.
+
+필터에 나열된 작업이 없는 경우, 인텐트가 일치될 대상이 아무것도 없으므로 모든 인텐트가 테스트에 실패합니다. 그러나 Intent가 작업을 지정하지 않는 경우, 필터에 최소한 한 개 이상의 작업이 들어 있지 않다면 인텐트가 테스트를 통과하게 됩니다.   
+
+### 카테고리 테스트
+허용된 인텐트 카테고리를 나타내기 위해 인텐트 필터는 0개 이상의 `<category>` 요소를 선언할 수 있습니다.   
+
+```kotlin
+<intent-filter>
+    <category android:name="android.intent.category.DEFAULT" />
+    <category android:name="android.intent.category.BROWSABLE" />
+    ...
+</intent-filter>
+```   
+
+인텐트가 카테고리 테스트를 통과하려면 Intent 내의 모든 카테고리가 필터 내의 카테고리에 일치해야 합니다. 그 역은 반드시 성립하지 않아도 됩니다. 인텐트 필터가 Intent에서 지정된 것보다 더 많은 카테고리를 선언할 수 있지만, 그래도 Intent는 통과합니다. 그러므로 카테고리가 없는 인텐트라면 필터에 어떤 카테고리가 선언되어 있든 이 테스트를 항상 통과하는 것이 맞습니다.   
+
+> 참고 : Android는 startActivity()와 startActivityForResult()에 전달된 모든 암시적 인텐트에 CATEGORY_DEFAULT 카테고리를 자동으로 적용합니다. 따라서 액티비티가 암시적 인텐트를 수신하기를 원하는 경우, 그 인텐트 필터 내에 "android.intent.category.DEFAULT"에 대한 카테고리가 반드시 포함되어 있어야 합니다(이전의 `<intent-filter>` 예시 참조).   
+
+### 데이터 테스트
+허용된 인텐트 데이터를 나타내기 위해 인텐트 필터는 0개 이상의 `<data>` 요소를 선언할 수 있습니다.
+
+```kotlin
+<intent-filter>
+    <data android:mimeType="video/mpeg" android:scheme="http" ... />
+    <data android:mimeType="audio/mpeg" android:scheme="http" ... />
+    ...
+</intent-filter>
+```
+
+각 `<data>` 요소는 URI 구조와 데이터 유형(MIME 미디어 유형)을 나타낼 수 있습니다. URI의 각 부분은 별도의 특성(scheme, host, port, path)으로 구성됩니다.
+
+`<scheme>://<host>:<port>/<path>`
+
+다음 예시는 이 특성에 사용 가능한 값을 보여줍니다.
+
+`content://com.example.project:200/folder/subfolder/etc`
+
+이 URI에서 구성표는 content, 호스트는 com.example.project, 포트는 200, 경로는 folder/subfolder/etc입니다.   
+
+이와 같은 특성은 각각 `<data>` 요소에서 선택 항목이지만, 서로 선형 종속성이 있습니다.
+
+* 구성표가 지정되지 않으면 호스트가 무시됩니다.
+* 호스트가 지정되지 않으면 포트가 무시됩니다.
+* 구성표와 호스트가 둘 다 지정되지 않으면 경로가 무시됩니다.   
+
+인텐트 안의 URI가 필터 안의 URI 사양에 비교되는 경우, 이것은 필터 내에 포함된 URI의 몇몇 부분에만 비교되는 것입니다. 예를 들면 다음과 같습니다.   
+
+* 필터가 구성표만 지정하는 경우, 해당 구성표가 있는 모든 URI가 필터와 일치합니다.
+* 필터가 구성표와 권한은 지정하지만 경로는 지정하지 않는 경우, 같은 구성표와 권한이 있는 모든 URI가 경로와 관계없이 필터를 통과합니다.
+* 필터가 구성표, 권한과 경로를 지정하는 경우 같은 구성표, 권한과 경로가 있는 URI만 해당 필터를 통과합니다.   
+
+> 참고 : 경로 사양에는 경로 이름이 부분적으로만 일치하도록 요구하기 위해 와일드카드 별표(*)가 들어 있을 수 있습니다.   
+
+데이터 테스트는 인텐트 안의 URI와 MIME 유형 둘 모두를 필터 안에서 지정된 MIME 유형과 비교합니다. 규칙은 다음과 같습니다.
+
+1. URI도 MIME 유형도 들어 있지 않은 인텐트는 필터가 URI나 MIME 유형을 전혀 지정하지 않은 경우에만 테스트를 통과합니다.
+2. URI는 들어 있지만 MIME 유형은 없는 인텐트(URI로부터는 명시적이지도 않고 추론할 수도 없음)는 그 URI가 필터의 URI 형식과 일치하고, 필터가 인텐트와 마찬가지로 MIME 유형을 지정하지 않는 경우에만 테스트를 통과합니다.
+3. MIME 유형은 들어 있지만 URI는 없는 인텐트는 해당 필터가 같은 MIME 유형을 나열하지만 URI 형식은 지정하지 않은 경우에만 테스트를 통과합니다.
+4. URI와 MIME 유형이 둘 다 들어 있는 인텐트(URI로부터는 명시적이지도 않고 추론할 수도 없음)는 해당 유형이 필터 내에 나열된 유형과 일치하는 경우에만 MIME 유형 부분의 테스트를 통과합니다. 이 인텐트는 URI가 필터 내의 URI와 일치하는 경우나, content: 또는 file: URI가 있고 필터가 URI를 지정하지 않은 경우에 URI 부분의 테스트를 통과합니다. 달리 말하면, 필터가 MIME 유형만 나열하는 경우, 구성 요소가 content: 및 file: 데이터를 지원하는 것으로 간주됩니다.   
+
+> 참고 : 인텐트가 URI 또는 MIME 유형을 지정하는 경우, `<intent-filter>`에 `<data>` 요소가 없으면 데이터 테스트를 통과하지 못합니다.   
+
+이 마지막 규칙인 규칙 (d)는 구성 요소가 파일 또는 콘텐츠 제공자로부터 로컬 데이터를 가져올 수 있다는 기대를 반영한 것입니다. 따라서 이런 필터는 데이터 유형만 나열할 수 있고, content: 및 file: 구성표를 명시적으로 지명하지 않아도 됩니다. 다음 예시는 `<data>` 요소가 구성 요소가 콘텐츠 제공자에서 이미지 데이터를 가져와 표시할 수 있다고 Android에 알리는 일반적인 사례를 보여줍니다.   
+
+```kotlin
+<intent-filter>
+    <data android:mimeType="image/*" />
+    ...
+</intent-filter>
+```   
+
+데이터 유형은 지정하지만 URI는 지정하지 않는 필터가 가장 보편적일 것입니다. 그 이유는 대부분의 사용 가능한 데이터를 콘텐츠 제공자가 제공하기 때문입니다.
+
+다른 보편적인 구성을 예로 들자면 구성표와 데이터 유형을 가진 필터가 있겠습니다. 예를 들어 다음과 같은 `<data>` 요소는 구성 요소가 작업을 수행하기 위해 네트워크에서 비디오 데이터를 검색할 수 있다고 Android에 알립니다.   
+
+```kotlin
+<intent-filter>
+    <data android:scheme="http" android:mimeType="video/*" />
+    ...
+</intent-filter>
+```   
+
+### 인텐트 일치
+인텐트를 인텐트 필터에 비교해 일치시키면 활성화할 대상 구성 요소를 찾아낼 수 있을 뿐만 아니라, 기기에 있는 일련의 구성 요소에 대해 무언가 알아낼 수도 있습니다. 예를 들어 홈 앱이 앱 시작 관리자를 채우려면 ACTION_MAIN 작업과 CATEGORY_LAUNCHER 카테고리를 지정하는 인텐트 필터를 가진 액티비티를 모두 찾아야 합니다. 인텐트의 작업과 카테고리가 필터와 일치해야 매칭이 성공합니다. 이 내용은 IntentFilter 클래스에 대한 문서에서 설명합니다.
+
+애플리케이션은 홈 앱과 같은 방식으로 인텐트 매칭을 사용합니다. PackageManager에 있는 query...() 메서드 집합은 특정 인텐트를 허용하는 구성 요소를 모두 반환하며, 이와 유사한 일련의 resolve...() 메서드는 한 인텐트에 응답하는 데 가장 좋은 구성 요소를 판별합니다. 예를 들어 queryIntentActivities()는 인텐트를 인수로 전달할 수 있는 모든 액티비티의 목록을 반환하고 queryIntentServices()는 서비스와 관련하여 그와 유사한 목록을 반환합니다. 어느 메서드도 구성 요소를 활성화하지는 않습니다. 단지 응답할 수 있는 것을 나열하기만 합니다. 이와 유사한 메서드인 queryBroadcastReceivers()도 있는데, 이것은 Broadcast Receiver용입니다.
