@@ -47,6 +47,7 @@ Fragment의 view 계층은 host view 계층의 부분이 되거나 host view 계
 [참고 자료 2](https://www.charlezz.com/?p=1080)   
 [참고 자료 3](https://amitshekhar.me/blog/context-in-android-application)   
 [참고 자료 4](https://roomedia.tistory.com/entry/Android-Context%EB%9E%80-%EB%AC%B4%EC%97%87%EC%9D%BC%EA%B9%8C)   
+[참고 자료 5](https://velog.io/@sery270/%EC%95%88%EB%93%9C%EB%A1%9C%EC%9D%B4%EB%93%9C-Context)  
 
 # Intent
 ## 정의
