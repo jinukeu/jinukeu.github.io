@@ -89,7 +89,7 @@ ViewModel은 범위로 지정된 ViewModelStoreOwner가 사라질 때까지 메�
 ViewModel은 ViewModelStore라는 객체에서 관리를 한다.
 ViewModelStore 클래스는 내부적으로 `HashMap<String, ViewModel>` 를 두어 ViewModel을 관리한다.
 
-그러면 이 ViewModelStore 객체는 누가 어떻게 만들고 관리할까요? 그건 바로 ViewModelStoreOwner 라는 녀석이 한다.
+그러면 이 ViewModelStore 객체는 누가 어떻게 만들고 관리할까? 그건 바로 ViewModelStoreOwner 라는 녀석이 한다.
 
 액티비티나 프래그먼트가 ViewModelStoreOwner를 관리하고 있기 때문에, ViewModel 객체를 생성할 때 액티비티나 프래그먼트가 필요하고 어떤 Owner를 통해 생성하냐에 따라 ViewModel의 Scope이 결정된다.    
 
