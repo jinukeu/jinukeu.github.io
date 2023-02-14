@@ -274,7 +274,7 @@ fun main() {
                     delay(50) // Delay for 50 ms
                     Resource() // Acquire a resource and return it from withTimeout block     
                 }
-                resource.close() // Release the resource
+                resource.close() // Release the resource, timeout이 발생하면 실행되지 않는다!
             }
         }
     }
