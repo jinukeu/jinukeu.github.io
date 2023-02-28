@@ -162,22 +162,37 @@ newSingleThreadContext("Ctx1").use { ctx1 ->
     [Ctx2 @coroutine#1] Working in ctx2
     [Ctx1 @coroutine#1] Back to ctx1   
 
-이 예제는 코틀린 표준 라이브러리의 `use` 함수를 사용했습니다. `use` 함수는 `newSingleThreadContext`로 만들어진 threads가 더이상 필요하지 않을 때 release합니다. 
+이 예제는 코틀린 표준 라이브러리의 `use` 함수를 사용했습니다. `use` 함수는 `newSingleThreadContext`로 만들어진 threads가 더이상 필요하지 않을 때 release합니다.   
+
+## Job in the context
+코루틴의 Job은 context의 한 부분이며 `coroutineContext[Job]` 표현식을 사용하여 검색할 수 있습니다.
+```kotlin
+import kotlinx.coroutines.*
+
+fun main() = runBlocking<Unit> {
+    println("My job is ${coroutineContext[Job]}")    
+}
+```   
+
+debug mode에서 다음과 같은 출력문이 나옵니다.   
+`My job is "coroutine#1:BlockingCoroutine{Active}@6d311334"`   
+
+CoroutineScope의 isActive는 `coroutineContext[Job]?.isActive == true`의 짧은 버전입니다.
 
 
 ## Children of a coroutine
-다른 코루틴의 CoroutineScope안에서 새로운 코루틴이 실행되면 context를 CoroutineScope.coroutineContext를 통해 상속받고 새로운 코루틴의 Job은 부모 코루틴 Job의 자식이 됩니다. 부모 코루틴이 취소되면 모든 자식 역시 재귀적으로 취소됩니다.
+다른 코루틴의 CoroutineScope안에서 새로운 코루틴이 실행되면 CoroutineScope.coroutineContext를 통해 context를 상속받고 새로운 코루틴의 Job은 부모 코루틴 Job의 *자식*이 됩니다. 부모 코루틴이 취소되면 모든 자식 역시 재귀적으로 취소됩니다.
 
 <br>
 
 그러나, 부모-자식 관계는 다음 두 경우에 의해 재정의될 수 있습니다.
 
-1. 코루틴이 실행될 때(예를 들어, GlobalScope.launch) 다른 scope가 명백하게 지정되면 Job을 부모 scope로 부터 상속 받지 않습니다.
-2. 다른 Job 객체가 새로운 코루틴의 context로 통과되면(아래 예시 참고) 부모 scope의 Job을 재정의합니다.
+1. 코루틴이 실행될 때 다른 scope가 명백하게 지정되면(예를 들어, `GlobalScope.launch`) Job을 부모 scope로 부터 상속 받지 않습니다.
+2. 다른 `Job` 객체가 새로운 코루틴의 context로 통과되면(아래 예시 참고) 부모 scope의 `Job`을 재정의합니다.
 
 두 경우에 실행된 코루틴은 scope에 묶여있지 않습니다. 독립적으로 실행되고 작동합니다.
 
-{% highlight kotlin %}
+```kotlin
 // launch a coroutine to process some kind of incoming request
 val request = launch {
     // it spawns two other jobs
@@ -198,7 +213,7 @@ delay(500)
 request.cancel() // cancel processing of the request
 println("main: Who has survived request cancellation?")
 delay(1000) // delay the main thread for a second to see what happens
-{% endhighlight kotlin %}
+```
     job1: I run in my own Job and execute independently!
     job2: I am a child of the request coroutine
     main: Who has survived request cancellation?
@@ -208,7 +223,7 @@ delay(1000) // delay the main thread for a second to see what happens
 
 ## Parental responsibilities
 부모 코루틴은 항상 자식 코루틴이 전부 완료될 때까지 기다립니다. 부모 코루틴은 모든 자식 코루틴을 추적할 필요가 없고 자식들을 기다리기 위해 Job.join을 사용할 필요가 없습니다.   
-{% highlight kotlin %}
+```kotlin
 // launch a coroutine to process some kind of incoming request
 val request = launch {
     repeat(3) { i -> // launch a few children jobs
@@ -221,7 +236,7 @@ val request = launch {
 }
 request.join() // wait for completion of the request, including all its children
 println("Now processing of the request is complete")
-{% endhighlight kotlin %}
+```
     request: I'm done and I don't explicitly join my children that are still active
     Coroutine 0 is done
     Coroutine 1 is done
@@ -230,34 +245,64 @@ println("Now processing of the request is complete")
 
 <br>
 
+## Naming coroutines for debugging
+코루틴이 자주 log를 남기고 단지 같은 코루틴에서 오는 밀접한 로그 기록을 볼 때, 자동으로 할당되는 id들은 유용합니다. 하지만, 코루틴이 구체적인 요구 사항에 묶여있거나 구체적인 background task에서 동작한다면, 디버깅을 위해 정확한 이름을 짓는게 좋습니다. CoroutineName context 요소는 thread name과 동일한 목표를 제공합니다. debugging mode가 켜졌을 때 코루틴을 실행하고 있는 thread name에 포함되어 있습니다.   
+
+```kotlin
+log("Started main coroutine")
+// run two background value computations
+val v1 = async(CoroutineName("v1coroutine")) {
+    delay(500)
+    log("Computing v1")
+    252
+}
+val v2 = async(CoroutineName("v2coroutine")) {
+    delay(1000)
+    log("Computing v2")
+    6
+}
+log("The answer for v1 / v2 = ${v1.await() / v2.await()}")
+```   
+
+`-Dkotlinx.coroutines.debug` JVM option을 킨 출력 값은 다음과 같습니다.   
+    [main @main#1] Started main coroutine
+    [main @v1coroutine#2] Computing v1
+    [main @v2coroutine#3] Computing v2
+    [main @main#1] The answer for v1 / v2 = 42
+
+
+
 ## Combining context elements
-때때로 coroutine context에 여러개의 요소를 정의할 필요가 있습니다. 이때 + 연산자를 사용할 수 있습니다. 예를들어, dispatcher과 이름을 동시에 지정할 수 있습니다.
-{% highlight kotlin %}
+때때로 coroutine context에 여러개의 요소를 정의할 필요가 있습니다. 이때 `+` 연산자를 사용할 수 있습니다. 예를들어, dispatcher과 이름을 동시에 지정할 수 있습니다.
+```kotlin
 launch(Dispatchers.Default + CoroutineName("test")) {
     println("I'm working in thread ${Thread.currentThread().name}")
 }
-{% endhighlight kotlin %}
+```
 
+`-Dkotlinx.coroutines.debug` JVM option을 킨 출력 값은 다음과 같습니다.    
+    I'm working in thread DefaultDispatcher-worker-1 @test#2
 <br>
 
 ## Coroutine scope
-application이 lifecycle object를 가지고 있지만 object는 코루틴이 아니라고 가정해봅시다. 예를 들어 Android application을 작성하고 있고 데이터를 가져오거나 업데이트하는 비동기 작업을 수행하기 위해 다양한 코루틴을 context안에서 실행하고 있습니다. 메모리 누출을 막기 위해 모든 코루틴들은 액티비티가 destoryed될 때 취소되야합니다. 물론 contexts와 jobs를 액티비티의 생명주기와 코루틴에 맞게 다루겠지만, **kotlinx.coroutines**는 CoroutineScope를 캡슐화하는 추상화를 제공합니다. 모든 코루틴 빌더가 코루틴의 확장으로 선언되므로 코루틴 scope에 대해 이미 잘 알고 있어야합니다.
+application이 lifecycle object를 가지고 있지만 object는 코루틴이 아니라고 가정해봅시다. 예를 들어 Android application을 작성하고 있습니다. 데이터를 가져오고 업데이트, 애니메이션 수행, 등을 하는 비동기 작업하려고 합니다. 이를 위해 다양한 코루틴을 Android activity context안에서 실행하고 있다고 해봅시다. 메모리 누출을 막기 위해 모든 코루틴들은 액티비티가 destoryed될 때 취소되야합니다. 물론 contexts와 jobs를 액티비티의 생명주기와 코루틴에 맞게 다루겠지만, **kotlinx.coroutines**는 CoroutineScope를 캡슐화하는 추상화를 제공합니다. 모든 코루틴 빌더가 코루틴의 확장으로 선언되므로 코루틴 scope에 대해 이미 잘 알고 있어야합니다.
 
 <br>
 
 액티비티의 생명주기와 얽매인 CoroutineScope 객체를 생성함으로써 코루틴의 생명주기를 관리할 수 있습니다. CoroutineScope() 또는 MainScope()의 factory functions를 이용하여 CoroutineScope를 생성할 수 있습니다. 전자의 경우 일반적인 목적의 scope이지만 후자의 경우 UI applications를 위한 scope를 만들며 Dispatchers.Main을 기본 dispatcher로 사용합니다.
 
-{% highlight kotlin %}
+```kotlin
 class Activity {
     private val mainScope = MainScope()
 
     fun destroy() {
         mainScope.cancel()
     }
-    // to be continued ...
-{% endhighlight kotlin %}
+```
+
 이제 scope가 정의된 액티비티의 scope안에서 코루틴을 실행할 수 있습니다. 
-{% highlight kotlin %}
+
+```kotlin
 // class Activity continues
     fun doSomething() {
         // launch ten coroutines for a demo, each working for a different time
@@ -269,9 +314,9 @@ class Activity {
         }
     }
 } // class Activity ends
-{% endhighlight kotlin %}
-main 함수에서 액티비티를 만들고 doSomething 함수를 호출합니다. 그리고 액티비티를 500ms 후에 destroy합니다. 이는 doSomething으로 시작된 모둔 코루틴을 취소합니다. 더 이상 메세지가 print되지 않음을 통해 확인할 수 있습니다.
-{% highlight kotlin %}
+```
+main 함수에서 액티비티를 만들고 `doSomething` 함수를 호출합니다. 그리고 액티비티를 500ms 후에 destroy합니다. 이는 `doSomething`으로 시작된 모든 코루틴을 취소합니다. 더 이상 메세지가 print되지 않음을 통해 확인할 수 있습니다.
+```kotlin
 val activity = Activity()
 activity.doSomething() // run test function
 println("Launched coroutines")
@@ -279,8 +324,42 @@ delay(500L) // delay for half a second
 println("Destroying activity!")
 activity.destroy() // cancels all coroutines
 delay(1000) // visually confirm that they don't work
-{% endhighlight kotlin %}
+```
     Launched coroutines
     Coroutine 0 is done
     Coroutine 1 is done
-    Destroying activity!
+    Destroying activity!   
+
+### Thread-local data
+때때로 일부 thread-local 데이터를 코루틴으로 전달하거나 코루틴 사이에 전달하는 기능을 갖는 것이 편리합니다. 하지만 특정 thread에 bound되어 있지 않기 때문에 boilerplate를 유발할 수 있습니다.   
+
+`ThreadLocal`, `asContextElement` extension 함수를 통해 해결할 수 있습니다. 코루틴이 context를 switch할때마다 주어진 `ThreadLocal` 값을 유지시키고 복구하는 추가적인 context element를 만듭니다.   
+
+```kotlin
+threadLocal.set("main")
+println("Pre-main, current thread: ${Thread.currentThread()}, thread local value: '${threadLocal.get()}'")
+val job = launch(Dispatchers.Default + threadLocal.asContextElement(value = "launch")) {
+    println("Launch start, current thread: ${Thread.currentThread()}, thread local value: '${threadLocal.get()}'")
+    yield()
+    println("After yield, current thread: ${Thread.currentThread()}, thread local value: '${threadLocal.get()}'")
+}
+job.join()
+println("Post-main, current thread: ${Thread.currentThread()}, thread local value: '${threadLocal.get()}'")
+```   
+
+Dispatchers.Default를 사용하여 background thread pool에서 새로운 코루틴을 실행하고 있습니다. 따라서 thread pool의 다른 스레드에서 작동하지만, thread local 변수 값을 가지고 있습니다. 이 변수 값은 `threadLocal.asContextElement(value = "launch")`를 통해 구체화되어 있습니다. 어느 thread에서 코루틴이 실행 중인지는 상관 없습니다. 따라서 debug 출력 결과는 다음과 같습니다.   
+
+    Pre-main, current thread: Thread[main @coroutine#1,5,main], thread local value: 'main'
+    Launch start, current thread: Thread[DefaultDispatcher-worker-1 @coroutine#2,5,main], thread local value: 'launch'
+    After yield, current thread: Thread[DefaultDispatcher-worker-2 @coroutine#2,5,main], thread local value: 'launch'
+    Post-main, current thread: Thread[main @coroutine#1,5,main], thread local value: 'main'    
+
+상응하는 context element를 설정해야한다는 것은 잊어버리기 쉽습니다. 만약 코루틴을 실행하는 스레드가 다르다면, 코루틴으로부터 접근된 thread-local 변수는 예상치 못한 값을 가질 수 있습니다. 이런 상황을 피하기 위해, ensurePresent 메서드를 사용하고 부적절한 사용에 대한 fail-fast를 사용하기를 추천합니다.   
+
+`ThreadLocal`은 first-class support를 가지고 있으며 어떤 원시 `kotlinx.coroutines` provides와 사용할 수 있습니다. key를 하나만 가질 수 있지만, thread-local이 변경되었을 때 새로운 값은 코루틴 caller로 전달되지 않습니다. (context element는 모든 `ThreadLocal` 객체 접근을 모두 추적하지 못합니다.) 그리고 업데이트 된 값은 다음 suspension에서 유실됩니다. 코루틴에서 thread-local 값을 업데이트하기 위해 withContext를 사용하세요. [asContextElement](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/as-context-element.html)를 참고하세요.   
+
+대안으로, 값은 `class Counter(var i : Int)` 처럼 mutale box에 저장될 수 있습니다. 이는 결국 thread-local 변수에 저장됩니다. 하지만 이 경우 mutable box안의 변수에 대한 잠재적인 동시 수정에 대한 동기화 책임이 있습니다.   
+
+예를 들어 로깅 MDC, 트랜잭션 컨텍스트 또는 내부적으로 데이터 전달을 위해 스레드 로컬을 사용하는 기타 라이브러리와의 통합과 같은 고급 사용에 대해서는 구현해야 하는 [ThreadContextElement](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-thread-context-element/index.html) 인터페이스의 설명서를 참조하십시오.
+
+
