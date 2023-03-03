@@ -13,7 +13,7 @@ toc: true
 toc_sticky: true
 
 date: 2022-08-23
-last_modified_at: 2022-08-23
+last_modified_at: 2023-03-02
 ---
 > 코루틴 공식 문서를 번역하고 내용을 조금 변경하거나 내용을 추가한 게시글입니다. 잘못된 번역이 있을 수 있습니다.
 > [참고한 공식 문서 바로가기](https://kotlinlang.org/docs/flow.html)
@@ -76,6 +76,7 @@ fun main() = runBlocking<Unit> {
 
 ### Flows
 `List<Int>`를 result type로 하는 것은 모든 값은 한번에 반환하겠다는 것을 의미합니다. 값이 비동기로 계산되는 stream임을 나타내기 위해 `Flow<Int>` type을 사용할 수 있습니다. `Sequence<Int>` type을 동기적으로 계산되는 값을 사용했던 것 처럼요.
+
 ```kotlin
 fun simple(): Flow<Int> = flow { // flow builder
     for (i in 1..3) {
@@ -147,7 +148,7 @@ fun main() = runBlocking<Unit> {
     2
     3
 
-주요 원인은 flow를 반환하는 `simple`함수가 suspend 함수가 아니기 때문입니다. 저절로, `simple()` 호출은 빠르게 반환하며 아무것도 기다리지 않습니다. flow는 수집될 때마다 시작합니다. `collect`를 다시 호출했을 때 "Flow started"를 볼 수 있는 이유입니다.
+주요 원인은 flow를 반환하는 `simple`함수가 `suspend` 함수가 아니기 때문입니다. 저절로, `simple()` 호출은 빠르게 return되며 아무것도 기다리지 않습니다. flow는 수집될 때마다 시작합니다. `collect`를 다시 호출했을 때 "Flow started"를 볼 수 있는 이유입니다.
 
 <br>
 
