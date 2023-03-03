@@ -265,6 +265,7 @@ log("The answer for v1 / v2 = ${v1.await() / v2.await()}")
 ```   
 
 `-Dkotlinx.coroutines.debug` JVM option을 킨 출력 값은 다음과 같습니다.   
+
     [main @main#1] Started main coroutine
     [main @v1coroutine#2] Computing v1
     [main @v2coroutine#3] Computing v2
@@ -281,7 +282,8 @@ launch(Dispatchers.Default + CoroutineName("test")) {
 ```
 
 `-Dkotlinx.coroutines.debug` JVM option을 킨 출력 값은 다음과 같습니다.    
-    I'm working in thread DefaultDispatcher-worker-1 @test#2
+
+     I'm working in thread DefaultDispatcher-worker-1 @test#2
 <br>
 
 ## Coroutine scope
