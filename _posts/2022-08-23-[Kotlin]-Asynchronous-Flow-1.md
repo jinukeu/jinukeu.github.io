@@ -226,7 +226,7 @@ flow transformation 연산자들 중에서 가장 일반적인 것은 transform�
 
 <br>
 
-예를 들어, `transform`을 사용하면 long-running asynchronout request가 수행되기 전에 string을 emit할 수 있고 응답을 따라갈 수 있습니다.
+예를 들어, `transform`을 사용하면 long-running asynchronous request가 수행되기 전에 string을 emit할 수 있고 응답을 따라갈 수 있습니다.
 ```kotlin
 suspend fun performRequest(request: Int): String {
     delay(1000) // imitate long-running asynchronous work
@@ -279,7 +279,7 @@ fun main() = runBlocking<Unit> {
 <br>
 
 ## Terminal flow operators
-flow의 Terminal 연산자는 flow의 collection을 시작하는 suspending function입니다. collect 연산자는 가장 기본적이지만 다른 쉽게 만들 수 있는 terminal 연산자들이 있습니다.
+flow의 Terminal 연산자는 flow의 collection을 시작하는 **suspending functions**입니다. collect 연산자는 가장 기본적이지만 다른 쉽게 만들 수 있는 terminal 연산자들이 있습니다.
 * toList와 toSet처럼 다양한 collections 전환
 * 첫 번재 값을 가져오고 flow가 단일 값을 emit하는지 확인하기 위한 연산자
 * reduce와 flow를 사용하여 값으로 flow를 reducing
@@ -359,7 +359,7 @@ fun main() = runBlocking<Unit> {
 
 <br>
 
-### Wrong emissiong withContext
+### A common pitfall when using withContext
 그러나, long-running CPU-consuming 코드는 Dispatchers.Default context에서 실행될 필요가 있습니다. 그리고 UI-updating code는 Dispatchers.Main context에서 실행되야합니다. 일반적으로 withContext는 코루틴을 사용하는 코드의 context를 바꾸기위해 사용됩니다. 그러나 `flow { ... }` 빌더 안의 코드는 context 보존 프로퍼티를 준수해야하고 다른 context로부터 emit하는 것을 허용하지 않습니다.
 ```kotlin
 fun simple(): Flow<Int> = flow {
