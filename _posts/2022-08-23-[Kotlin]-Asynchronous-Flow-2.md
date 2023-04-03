@@ -13,7 +13,7 @@ toc: true
 toc_sticky: true
 
 date: 2022-08-24
-last_modified_at: 2022-08-24
+last_modified_at: 2023-03-30
 ---
 > 코루틴 공식 문서를 번역하고 내용을 조금 변경하거나 내용을 추가한 게시글입니다. 잘못된 번역이 있을 수 있습니다.
 > [참고한 공식 문서 바로가기](https://kotlinlang.org/docs/flow.html)
@@ -47,20 +47,45 @@ fun main() = runBlocking<Unit> {
 
 flow에 buffer 연산자를 사용하여 간단한 flow emitting 코드를 collecting 코드와 동시에 실행할 수 있습니다.
 ```kotlin
-val time = measureTimeMillis {
-    simple()
-        .buffer() // buffer emissions, don't wait
-        .collect { value -> 
-            delay(300) // pretend we are processing it for 300 ms
-            println(value) 
-        } 
-}   
-println("Collected in $time ms")
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
+import kotlin.system.*
+
+
+fun simple(): Flow<Int> = flow {
+    for (i in 1..3) {
+        delay(100) // pretend we are asynchronously waiting 100 ms
+        emit(i) // emit next value
+        println("$i emittedAt : ${time}")
+    }
+}
+
+fun main() = runBlocking<Unit> { 
+    val time = measureTimeMillis {
+        simple()
+            .buffer() // buffer emissions, don't wait
+            .collect { value -> 
+                println("$value collectedAt : ${time}")
+                delay(300) // pretend we are processing it for 300 ms
+                println("$value processedAt : ${time}")
+            } 
+    }   
+    println("Collected in $time ms")
+}
+
+val time
+	get() = System.currentTimeMillis() % 10000
 ```
-    1
-    2
-    3
-    Collected in 1071 ms
+    1 emittedAt : 4006
+    1 collectedAt : 4008
+    2 emittedAt : 4107
+    3 emittedAt : 4208
+    1 processedAt : 4308
+    2 collectedAt : 4309
+    2 processedAt : 4609
+    3 collectedAt : 4609
+    3 processedAt : 4909
+    Collected in 1062 ms
 
 <br>
 
@@ -68,16 +93,46 @@ println("Collected in $time ms")
 flow가 부분적인 연산 결과 또는 연산 상태 업데이트를 나타낸다면 각각의 값을 처리할 필요가 없고 가장 최근의 값만 처리할 수 있습니다. collector가 값들을 처리하는데 너무 오랜 시간이 걸릴 경우 conflate 연산자를 중간 값들을 건너뛰기 위해 사용할 수 있습니다.    
 (이전 예제 코드 참고)
 ```kotlin
-val time = measureTimeMillis {
-    simple()
-        .conflate() // conflate emissions, don't process each one
-        .collect { value -> 
-            delay(300) // pretend we are processing it for 300 ms
-            println(value) 
-        } 
-}   
-println("Collected in $time ms")
-```
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
+import kotlin.system.*
+
+
+fun simple(): Flow<Int> = flow {
+    for (i in 1..3) {
+        delay(100) // pretend we are asynchronously waiting 100 ms
+        emit(i) // emit next value
+        println("$i emittedAt : ${time}")
+    }
+}
+
+fun main() = runBlocking<Unit> { 
+    val time = measureTimeMillis {
+        simple()
+            .conflate() // buffer emissions, don't wait
+            .collect { value -> 
+                println("$value collectedAt : ${time}")
+                delay(300) // pretend we are processing it for 300 ms
+                println("$value processedAt : ${time}")
+            } 
+    }   
+    println("Collected in $time ms")
+}
+
+val time
+	get() = System.currentTimeMillis() % 10000
+```   
+
+    1 emittedAt : 5406
+    1 collectedAt : 5418
+    2 emittedAt : 5507
+    3 emittedAt : 5608
+    1 processedAt : 5719
+    3 collectedAt : 5719
+    3 processedAt : 6019
+    Collected in 776 ms
+
+
 숫자 1이 처리되는 동안 2, 3은 이미 생산되었음을 알 수 있습니다. 그래서 2는 융합(conflated)되었고 가장 최근의 것(3)만이 collector에게 전달됩니다.
 
 <br>
