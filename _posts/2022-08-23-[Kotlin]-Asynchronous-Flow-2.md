@@ -211,12 +211,13 @@ nums.combine(strs) { a, b -> "$a -> $b" } // compose a single string with "combi
     } 
 ```
    
-꽤 다른 결과를 얻을 수 있습니다. `nums` 또는 `strs` flow의 emission 마다 줄이 출력됩니다.
-    1 -> one at 452 ms from start
-    2 -> one at 651 ms from start
-    2 -> two at 854 ms from start
-    3 -> two at 952 ms from start
-    3 -> three at 1256 ms from start
+꽤 다른 결과를 얻을 수 있습니다. `nums` 또는 `strs` flow의 emission 마다 줄이 출력됩니다.   
+
+     1 -> one at 452 ms from start
+     2 -> one at 651 ms from start
+     2 -> two at 854 ms from start
+     3 -> two at 952 ms from start
+     3 -> three at 1256 ms from start
   
 <br>
 
@@ -326,7 +327,8 @@ fun main() = runBlocking<Unit> {
     } 
 }    
 ```
-이 코드는 collect 마지막 연산자에서 성공적으로 exception을 catch합니다. 또한 그 이후에 값이 emit되지 않음을 알 수 있습니다.
+이 코드는 collect 마지막 연산자에서 성공적으로 exception을 catch합니다. 또한 그 이후에 값이 emit되지 않음을 알 수 있습니다.   
+
     Emitting 1
     1
     Emitting 2
@@ -358,7 +360,8 @@ fun main() = runBlocking<Unit> {
     } 
 } 
 ```
-여전히 exception은 catch되고 collection는 중지됩니다.
+여전히 exception은 catch되고 collection는 중지됩니다.   
+
     Emitting 1
     string 1
     Emitting 2
@@ -411,7 +414,8 @@ fun main() = runBlocking<Unit> {
         }
 }   
 ```
-`catch` 연산자가 있음에도 불구하고 "Caught ..." 메세지가 출력되지 않습니다.
+`catch` 연산자가 있음에도 불구하고 "Caught ..." 메세지가 출력되지 않습니다.   
+
       Emitting 1
       1
       Emitting 2
@@ -430,7 +434,8 @@ simple()
     .catch { e -> println("Caught $e") }
     .collect()
 ```
-이제 "Caught ..." 메세지 출력을 확인할 수 있고 `try/catch` 블록을 사용하지 않고 모든 exception을 처리할 수 있습니다.
+이제 "Caught ..." 메세지 출력을 확인할 수 있고 `try/catch` 블록을 사용하지 않고 모든 exception을 처리할 수 있습니다.   
+
     Emitting 1
     1
     Emitting 2
@@ -506,7 +511,8 @@ fun main() = runBlocking<Unit> {
         }
 }
 ```
-completion cause가 null이 아님을 확인할 수 있습니다. flow는 downstream exception에 의해 종료되었기 때문입니다.
+completion cause가 null이 아님을 확인할 수 있습니다. flow는 downstream exception에 의해 종료되었기 때문입니다.   
+
     1
     Flow completed with java.lang.IllegalStateException: Collected 2
     Exception in thread "main" java.lang.IllegalStateException: Collected 2
@@ -524,7 +530,20 @@ onEach 연산자는 이 역할을 수행합니다. 그러나 `onEach`는 중간 
 
 <br>
 
-collect terminal 연산자를 `onEach` 뒤에 사용한다면 다음 코드는 flow가 collect될 때까지 기다립니다.
+collect terminal 연산자를 `onEach` 뒤에 사용한다면 다음 코드는 flow가 collect될 때까지 기다립니다.   
+```kotlin
+// Imitate a flow of events
+fun events(): Flow<Int> = (1..3).asFlow().onEach { delay(100) }
+
+fun main() = runBlocking<Unit> {
+    events()
+        .onEach { event -> println("Event: $event") }
+        .collect() // <--- Collecting the flow waits
+    println("Done")
+} 
+```   
+
+
     Event: 1
     Event: 2
     Event: 3
