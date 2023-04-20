@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://koownij.github.io/sitemap.xml
+Sitemap: https://jinukeu.github.io/sitemap.xml
