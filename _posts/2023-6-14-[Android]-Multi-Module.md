@@ -7,7 +7,7 @@ categories:
 tags:
   - []
 
-permalink: /android/Bundle-직렬화-역직렬화-ViewModel/
+permalink: /android/Multi-Module/
 
 toc: true
 toc_sticky: true
